@@ -654,7 +654,7 @@ class TestSnmpAutoload(BaseFortiNetTestCase):
         self._setUp()
 
     @patch('cloudshell.devices.snmp_handler.QualiSnmp')
-    def test_autoload(self, snmp_mock):
+    def test_autoload_without_ports_in_ent_table(self, snmp_mock):
         property_map = {
             ('SNMPv2-MIB', 'sysObjectID', 0): 'SNMPv2-SMI::enterprises.12356.101.1.60',
             ('SNMPv2-MIB', 'sysContact', '0'): 'admin',
@@ -666,16 +666,25 @@ class TestSnmpAutoload(BaseFortiNetTestCase):
             ('ENTITY-MIB', 'entPhysicalSerialNum', 1): 'FGVMEVBICE74EA11',
             ('IF-MIB', 'ifName', 2): 'port1',
             ('IF-MIB', 'ifAlias', 2): '',
+            ('IF-MIB', 'ifType', 2): "'ethernetCsmacd'",
+            ('IF-MIB', 'ifPhysAddress', 2): '52:54:00:e5:48:f5',
+            ('IF-MIB', 'ifMtu', 2): '1500',
             ('IF-MIB', 'ifHighSpeed', 2): '10000',
             ('EtherLike-MIB', 'dot3StatsDuplexStatus', 2): '',
             ('MAU-MIB', 'ifMauAutoNegAdminStatus', 2): 'No Such Object currently exists at this OID',
             ('IF-MIB', 'ifName', 3): 'port2',
             ('IF-MIB', 'ifAlias', 3): '',
+            ('IF-MIB', 'ifType', 3): "'ethernetCsmacd'",
+            ('IF-MIB', 'ifPhysAddress', 3): '52:54:00:5c:65:1a',
+            ('IF-MIB', 'ifMtu', 3): '1500',
             ('IF-MIB', 'ifHighSpeed', 3): '10000',
             ('EtherLike-MIB', 'dot3StatsDuplexStatus', 3): "'fullDuplex'",
             ('MAU-MIB', 'ifMauAutoNegAdminStatus', 3): 'No Such Object currently exists at this OID',
             ('IF-MIB', 'ifName', 4): 'port3',
             ('IF-MIB', 'ifAlias', 4): '',
+            ('IF-MIB', 'ifType', 4): "'ethernetCsmacd'",
+            ('IF-MIB', 'ifPhysAddress', 4): '52:54:00:66:1f:8d',
+            ('IF-MIB', 'ifMtu', 4): '1500',
             ('IF-MIB', 'ifHighSpeed', 4): '10000',
             ('EtherLike-MIB', 'dot3StatsDuplexStatus', 4): '',
             ('MAU-MIB', 'ifMauAutoNegAdminStatus', 4): 'No Such Object currently exists at this OID',
@@ -684,62 +693,24 @@ class TestSnmpAutoload(BaseFortiNetTestCase):
         }
         table_map = {
             ('ENTITY-MIB', 'entPhysicalClass'): {
-                1: {'entPhysicalClass': "'chassis'", 'suffix': '1'}},
-            ('IF-MIB', 'ifTable'): {
-                1: {'ifType': "'tunnel'", 'suffix': '1', 'ifOutDiscards': '2',
-                    'ifAdminStatus': "'up'", 'ifMtu': '1500', 'ifInDiscards': '0',
-                    'ifInErrors': '0', 'ifDescr': '', 'ifOperStatus': "'up'", 'ifOutUcastPkts': '0',
-                    'ifInOctets': '0', 'ifLastChange': '0', 'ifPhysAddress': '',
-                    'ifInUcastPkts': '0', 'ifSpecific': 'SNMPv2-SMI::zeroDotZero.0',
-                    'ifOutErrors': '0', 'ifIndex': '1', 'ifOutQLen': '0', 'ifSpeed': '0',
-                    'ifOutNUcastPkts': '0', 'ifOutOctets': '0', 'ifInUnknownProtos': '0',
-                    'ifInNUcastPkts': '0'},
-                2: {'ifType': "'ethernetCsmacd'", 'suffix': '2', 'ifOutDiscards': '0',
-                    'ifAdminStatus': "'up'", 'ifMtu': '1500', 'ifInDiscards': '0',
-                    'ifInErrors': '0', 'ifDescr': '', 'ifOperStatus': "'up'",
-                    'ifOutUcastPkts': '50888', 'ifInOctets': '12467448', 'ifLastChange': '0',
-                    'ifPhysAddress': '52:54:00:e5:48:f5', 'ifInUcastPkts': '187601',
-                    'ifSpecific': 'SNMPv2-SMI::zeroDotZero.0', 'ifOutErrors': '0', 'ifIndex': '2',
-                    'ifOutQLen': '0', 'ifSpeed': '4294967295', 'ifOutNUcastPkts': '0',
-                    'ifOutOctets': '6495430', 'ifInUnknownProtos': '0', 'ifInNUcastPkts': '0'},
-                3: {'ifType': "'ethernetCsmacd'", 'suffix': '3', 'ifOutDiscards': '0',
-                    'ifAdminStatus': "'up'", 'ifMtu': '1500', 'ifInDiscards': '0',
-                    'ifInErrors': '0', 'ifDescr': '', 'ifOperStatus': "'up'",
-                    'ifOutUcastPkts': '9145', 'ifInOctets': '9514847', 'ifLastChange': '0',
-                    'ifPhysAddress': '52:54:00:5c:65:1a', 'ifInUcastPkts': '150387',
-                    'ifSpecific': 'SNMPv2-SMI::zeroDotZero.0', 'ifOutErrors': '0', 'ifIndex': '3',
-                    'ifOutQLen': '0', 'ifSpeed': '4294967295', 'ifOutNUcastPkts': '0',
-                    'ifOutOctets': '1133912', 'ifInUnknownProtos': '0', 'ifInNUcastPkts': '0'},
-                4: {'ifType': "'ethernetCsmacd'", 'suffix': '4', 'ifOutDiscards': '0',
-                    'ifAdminStatus': "'up'", 'ifMtu': '1500', 'ifInDiscards': '0',
-                    'ifInErrors': '0', 'ifDescr': '', 'ifOperStatus': "'up'",
-                    'ifOutUcastPkts': '9145', 'ifInOctets': '9514831', 'ifLastChange': '0',
-                    'ifPhysAddress': '52:54:00:66:1f:8d', 'ifInUcastPkts': '150387',
-                    'ifSpecific': 'SNMPv2-SMI::zeroDotZero.0','ifOutErrors': '0', 'ifIndex': '4',
-                    'ifOutQLen': '0', 'ifSpeed': '4294967295', 'ifOutNUcastPkts': '0',
-                    'ifOutOctets': '1133912', 'ifInUnknownProtos': '0', 'ifInNUcastPkts': '0'},
-                6: {'ifType': "'ieee8023adLag'", 'suffix': '6', 'ifOutDiscards': '0',
-                    'ifAdminStatus': "'up'", 'ifMtu': '1500', 'ifInDiscards': '0',
-                    'ifInErrors': '0', 'ifDescr': '', 'ifOperStatus': "'down'",
-                    'ifOutUcastPkts': '18290', 'ifInOctets': '19029678', 'ifLastChange': '0',
-                    'ifPhysAddress': '52:54:00:5c:65:1a', 'ifInUcastPkts': '300774',
-                    'ifSpecific': 'SNMPv2-SMI::zeroDotZero.0','ifOutErrors': '0', 'ifIndex': '6',
-                    'ifOutQLen': '0', 'ifSpeed': '0', 'ifOutNUcastPkts': '0',
-                    'ifOutOctets': '2267824', 'ifInUnknownProtos': '0', 'ifInNUcastPkts': '0'}},
-            ('ENTITY-MIB', 'entPhysicalContainsTable'): {
-                '1.4': {'entPhysicalChildIndex': '4', 'suffix': '1.4'},
-                '1.2': {'entPhysicalChildIndex': '2', 'suffix': '1.2'},
-                '1.3': {'entPhysicalChildIndex': '3', 'suffix': '1.3'}},
-            ('IP-MIB', 'ipAddrTable'): {
-                '192.168.122.240': {'ipAdEntAddr': '192.168.122.240', 'ipAdEntIfIndex': '2',
-                                    'suffix': '192.168.122.240', 'ipAdEntNetMask': '255.255.255.0',
-                                    'ipAdEntBcastAddr': '1', 'ipAdEntReasmMaxSize': '65535'},
-                '192.168.121.239': {'ipAdEntAddr': '192.168.121.239', 'ipAdEntIfIndex': '6',
-                                    'suffix': '192.168.121.239', 'ipAdEntNetMask': '255.255.255.0',
-                                    'ipAdEntBcastAddr': '1', 'ipAdEntReasmMaxSize': '65535'}},
-            ('IPV6-MIB', 'ipv6AddrEntry'): {
-                '2001:0db8:11a3:09d7:1f34:8a2e:07a0:765d': {'ipAdEntIfIndex': '2'},
-                '2001:0db8:11a3:09d7:1f34:8a2e:07a0:766d': {},
+                1: {'entPhysicalClass': "'chassis'", 'suffix': '1'}
+            },
+            ('IF-MIB', 'ifType'): {
+                1: {'ifType': "'tunnel'", 'suffix': '1'},
+                2: {'ifType': "'ethernetCsmacd'", 'suffix': '2'},
+                3: {'ifType': "'ethernetCsmacd'", 'suffix': '3'},
+                4: {'ifType': "'ethernetCsmacd'", 'suffix': '4'},
+                6: {'ifType': "'ieee8023adLag'", 'suffix': '6'}
+            },
+            ('IP-MIB', 'ipAdEntIfIndex'): {
+                '192.168.122.240':
+                    {'ipAdEntIfIndex': '2', 'suffix': '192.168.122.240'},
+                '192.168.121.239':
+                    {'ipAdEntIfIndex': '6', 'suffix': '192.168.121.239'}
+            },
+            ('IPV6-MIB', 'ipv6AddrType'): {
+                '2.2001:0db8:11a3:09d7:1f34:8a2e:07a0:765d': {'ipv6AddrType': ''},
+                '6.2001:0db8:11a3:09d7:1f34:8a2e:07a0:766d': {'ipv6AddrType': ''},
             },
             ('IEEE8023-LAG-MIB', 'dot3adAggPortAttachedAggID'): {},
             ('LLDP-MIB', 'lldpRemSysName'): {},
@@ -792,14 +763,31 @@ class TestSnmpAutoload(BaseFortiNetTestCase):
 
         self.assertEqual('Chassis 1', chassis.name)
 
-        expected_port_names = ['port1', 'port2', 'port3']
-        self.assertListEqual([port.name for port in ports], sorted(expected_port_names))
+        self.assertItemsEqual(
+            ['port1', 'port2', 'port3'], [port.name for port in ports]
+        )
+        self.assertItemsEqual(
+            [], [pw.name for pw in power_ports]
+        )
+        self.assertItemsEqual(
+            ['aggr'], [pc.name for pc in port_channels]
+        )
 
-        expected_power_port_names = []
-        self.assertListEqual([pw.name for pw in power_ports], sorted(expected_power_port_names))
+        not_found = object
+        ipv4 = ipv6 = not_found
+        for attr in details.attributes:
+            if attr.relative_address == 'CH1/P2':
+                if attr.attribute_name == 'IPv6 Address':
+                    ipv6 = attr.attribute_value
+                elif attr.attribute_name == 'IPv4 Address':
+                    ipv4 = attr.attribute_value
+            if not_found not in (ipv4, ipv6):
+                break
+        else:
+            self.fail("Didn't find port CH1/P2")
 
-        expected_port_channel_names = ['aggr']
-        self.assertListEqual([pc.name for pc in port_channels], sorted(expected_port_channel_names))
+        self.assertEqual('192.168.122.240', ipv4)
+        self.assertEqual('2001:0db8:11a3:09d7:1f34:8a2e:07a0:765d', ipv6)
 
     @patch('cloudshell.devices.snmp_handler.QualiSnmp')
     def test_not_supported_os(self, snmp_mock):
@@ -827,37 +815,25 @@ class TestSnmpAutoload(BaseFortiNetTestCase):
             ('ENTITY-MIB', 'entPhysicalSerialNum', 1): 'FGVMEVBICE74EA11',
             ('IF-MIB', 'ifName', 2): 'port1',
             ('IF-MIB', 'ifAlias', 2): '',
+            ('IF-MIB', 'ifType', 2): "'ethernetCsmacd'",
+            ('IF-MIB', 'ifPhysAddress', 2): '52:54:00:e5:48:f5',
+            ('IF-MIB', 'ifMtu', 2): '1500',
             ('IF-MIB', 'ifHighSpeed', 2): '10000',
             ('EtherLike-MIB', 'dot3StatsDuplexStatus', 2): '',
             ('MAU-MIB', 'ifMauAutoNegAdminStatus', 2): 'No Such Object currently exists at this OID',
-
             ('LLDP-MIB', 'lldpRemPortDesc', '12.50.1.12'): 'Ethernet 12',
         }
         table_map = {
             ('ENTITY-MIB', 'entPhysicalClass'): {
-                1: {'entPhysicalClass': "'chassis'", 'suffix': '1'}},
-            ('ENTITY-MIB', 'entPhysicalContainsTable'): {
-                '1.2': {'entPhysicalChildIndex': '2', 'suffix': '1.2'}},
-            ('IF-MIB', 'ifTable'): {
-                1: {'ifType': "'tunnel'", 'suffix': '1', 'ifOutDiscards': '2',
-                    'ifAdminStatus': "'up'", 'ifMtu': '1500', 'ifInDiscards': '0',
-                    'ifInErrors': '0', 'ifDescr': '', 'ifOperStatus': "'up'", 'ifOutUcastPkts': '0',
-                    'ifInOctets': '0', 'ifLastChange': '0', 'ifPhysAddress': '',
-                    'ifInUcastPkts': '0', 'ifSpecific': 'SNMPv2-SMI::zeroDotZero.0',
-                    'ifOutErrors': '0', 'ifIndex': '1', 'ifOutQLen': '0', 'ifSpeed': '0',
-                    'ifOutNUcastPkts': '0', 'ifOutOctets': '0', 'ifInUnknownProtos': '0',
-                    'ifInNUcastPkts': '0'},
-                2: {'ifType': "'ethernetCsmacd'", 'suffix': '2', 'ifOutDiscards': '0',
-                    'ifAdminStatus': "'up'", 'ifMtu': '1500', 'ifInDiscards': '0',
-                    'ifInErrors': '0', 'ifDescr': '', 'ifOperStatus': "'up'",
-                    'ifOutUcastPkts': '50888', 'ifInOctets': '12467448', 'ifLastChange': '0',
-                    'ifPhysAddress': '52:54:00:e5:48:f5', 'ifInUcastPkts': '187601',
-                    'ifSpecific': 'SNMPv2-SMI::zeroDotZero.0', 'ifOutErrors': '0', 'ifIndex': '2',
-                    'ifOutQLen': '0', 'ifSpeed': '4294967295', 'ifOutNUcastPkts': '0',
-                    'ifOutOctets': '6495430', 'ifInUnknownProtos': '0', 'ifInNUcastPkts': '0'}},
+                1: {'entPhysicalClass': "'chassis'", 'suffix': '1'}
+            },
+            ('IF-MIB', 'ifType'): {
+                1: {'ifType': "'tunnel'", 'suffix': '1'},
+                2: {'ifType': "'ethernetCsmacd'", 'suffix': '2'},
+            },
             ('IEEE8023-LAG-MIB', 'dot3adAggPortAttachedAggID'): {},
-            ('IP-MIB', 'ipAddrTable'): {},
-            ('IPV6-MIB', 'ipv6AddrEntry'): {},
+            ('IP-MIB', 'ipAdEntIfIndex'): {},
+            ('IPV6-MIB', 'ipv6AddrType'): {},
             ('LLDP-MIB', 'lldpRemSysName'): {
                 '12.50.1.12': {'lldpRemSysName': 'Other_device'}},
             ('LLDP-MIB', 'lldpLocPortDesc'): {
@@ -870,7 +846,7 @@ class TestSnmpAutoload(BaseFortiNetTestCase):
         self.runner.discover()
 
     @patch('cloudshell.devices.snmp_handler.QualiSnmp')
-    def test_not_expected_port(self, snmp_mock):
+    def test_autoload_with_ports_in_ent_table(self, snmp_mock):
         property_map = {
             ('SNMPv2-MIB', 'sysObjectID', 0): 'SNMPv2-SMI::enterprises.12356.101.1.60',
             ('SNMPv2-MIB', 'sysContact', '0'): 'admin',
@@ -880,63 +856,299 @@ class TestSnmpAutoload(BaseFortiNetTestCase):
             ('SNMPv2-MIB', 'sysObjectID', '0'): 'FORTINET-FORTIGATE-MIB::fgtVM64KVm',
             ('ENTITY-MIB', 'entPhysicalModelName', 1): 'FGT_VM64KVM',
             ('ENTITY-MIB', 'entPhysicalSerialNum', 1): 'FGVMEVBICE74EA11',
-            ('IF-MIB', 'ifName', 2): 'port1',
-            ('IF-MIB', 'ifAlias', 2): '',
-            ('IF-MIB', 'ifHighSpeed', 2): '10000',
-            ('EtherLike-MIB', 'dot3StatsDuplexStatus', 2): '',
-            (
-            'MAU-MIB', 'ifMauAutoNegAdminStatus', 2): 'No Such Object currently exists at this OID',
-            ('IF-MIB', 'ifName', 3): 'port2',
+            ('ENTITY-MIB', 'entPhysicalName', 2): 'modem',
+            ('ENTITY-MIB', 'entPhysicalName', 3): 'port1',
+            ('IF-MIB', 'ifAlias', 11): '',
+            ('IF-MIB', 'ifType', 11): "'ethernetCsmacd'",
+            ('IF-MIB', 'ifPhysAddress', 11): '00:09:0f:9a:30:97',
+            ('IF-MIB', 'ifMtu', 11): '1500',
+            ('IF-MIB', 'ifHighSpeed', 11): '10',
+            ('EtherLike-MIB', 'dot3StatsDuplexStatus', 11): '',
+            ('MAU-MIB', 'ifMauAutoNegAdminStatus', 11):
+                'No Such Instance currently exists at this OID',
+            ('ENTITY-MIB', 'entPhysicalContainedIn', 3): '1',
+            ('ENTITY-MIB', 'entPhysicalName', 4): 'port2',
+            ('IF-MIB', 'ifAlias', 14): '',
+            ('IF-MIB', 'ifType', 14): "'ethernetCsmacd'",
+            ('IF-MIB', 'ifPhysAddress', 14): '00:09:0f:9a:30:98',
+            ('IF-MIB', 'ifMtu', 14): '1500',
+            ('IF-MIB', 'ifHighSpeed', 14): '10',
+            ('EtherLike-MIB', 'dot3StatsDuplexStatus', 14): '',
+            ('MAU-MIB', 'ifMauAutoNegAdminStatus', 14):
+                'No Such Instance currently exists at this OID',
+            ('ENTITY-MIB', 'entPhysicalContainedIn', 4): '1',
+            ('ENTITY-MIB', 'entPhysicalName', 5): 'port3',
+            ('IF-MIB', 'ifAlias', 15): '',
+            ('IF-MIB', 'ifType', 15): "'ethernetCsmacd'",
+            ('IF-MIB', 'ifPhysAddress', 15): '00:09:0f:9a:30:99',
+            ('IF-MIB', 'ifMtu', 15): '1500',
+            ('IF-MIB', 'ifHighSpeed', 15): '10',
+            ('EtherLike-MIB', 'dot3StatsDuplexStatus', 15): '',
+            ('MAU-MIB', 'ifMauAutoNegAdminStatus', 15):
+                'No Such Instance currently exists at this OID',
+            ('ENTITY-MIB', 'entPhysicalContainedIn', 5): '1',
+            ('ENTITY-MIB', 'entPhysicalName', 6): 'port4',
+            ('IF-MIB', 'ifAlias', 16): '',
+            ('IF-MIB', 'ifType', 16): "'ethernetCsmacd'",
+            ('IF-MIB', 'ifPhysAddress', 16): '00:09:0f:9a:30:9a',
+            ('IF-MIB', 'ifMtu', 16): '1500',
+            ('IF-MIB', 'ifHighSpeed', 16): '10',
+            ('EtherLike-MIB', 'dot3StatsDuplexStatus', 16): '',
+            ('MAU-MIB', 'ifMauAutoNegAdminStatus', 16):
+                'No Such Instance currently exists at this OID',
+            ('ENTITY-MIB', 'entPhysicalContainedIn', 6): '1',
+            ('ENTITY-MIB', 'entPhysicalName', 7): 'port5',
+            ('IF-MIB', 'ifAlias', 17): '',
+            ('IF-MIB', 'ifType', 17): "'ethernetCsmacd'",
+            ('IF-MIB', 'ifPhysAddress', 17): '00:09:0f:9a:30:9b',
+            ('IF-MIB', 'ifMtu', 17): '1500',
+            ('IF-MIB', 'ifHighSpeed', 17): '10',
+            ('EtherLike-MIB', 'dot3StatsDuplexStatus', 17): '',
+            ('MAU-MIB', 'ifMauAutoNegAdminStatus', 17):
+                'No Such Instance currently exists at this OID',
+            ('ENTITY-MIB', 'entPhysicalContainedIn', 7): '1',
+            ('ENTITY-MIB', 'entPhysicalName', 8): 'port6',
+            ('IF-MIB', 'ifAlias', 18): '',
+            ('IF-MIB', 'ifType', 18): "'ethernetCsmacd'",
+            ('IF-MIB', 'ifPhysAddress', 18): '00:09:0f:9a:30:9c',
+            ('IF-MIB', 'ifMtu', 18): '1500',
+            ('IF-MIB', 'ifHighSpeed', 18): '10',
+            ('EtherLike-MIB', 'dot3StatsDuplexStatus', 18): '',
+            ('MAU-MIB', 'ifMauAutoNegAdminStatus', 18):
+                'No Such Instance currently exists at this OID',
+            ('ENTITY-MIB', 'entPhysicalContainedIn', 8): '1',
+            ('ENTITY-MIB', 'entPhysicalName', 9): 'port7',
+            ('IF-MIB', 'ifAlias', 19): '',
+            ('IF-MIB', 'ifType', 19): "'ethernetCsmacd'",
+            ('IF-MIB', 'ifPhysAddress', 19): '00:09:0f:9a:30:9d',
+            ('IF-MIB', 'ifMtu', 19): '1500',
+            ('IF-MIB', 'ifHighSpeed', 19): '10',
+            ('EtherLike-MIB', 'dot3StatsDuplexStatus', 19): '',
+            ('MAU-MIB', 'ifMauAutoNegAdminStatus', 19):
+                'No Such Instance currently exists at this OID',
+            ('ENTITY-MIB', 'entPhysicalContainedIn', 9): '1',
+            ('ENTITY-MIB', 'entPhysicalName', 10): 'port8',
+            ('IF-MIB', 'ifAlias', 20): '',
+            ('IF-MIB', 'ifType', 20): "'ethernetCsmacd'",
+            ('IF-MIB', 'ifPhysAddress', 20): '00:09:0f:9a:30:9e',
+            ('IF-MIB', 'ifMtu', 20): '1500',
+            ('IF-MIB', 'ifHighSpeed', 20): '10',
+            ('EtherLike-MIB', 'dot3StatsDuplexStatus', 20): '',
+            ('MAU-MIB', 'ifMauAutoNegAdminStatus', 20):
+                'No Such Instance currently exists at this OID',
+            ('ENTITY-MIB', 'entPhysicalContainedIn', 10): '1',
+            ('ENTITY-MIB', 'entPhysicalName', 11): 'port9',
+            ('IF-MIB', 'ifAlias', 12): '',
+            ('IF-MIB', 'ifType', 12): "'ethernetCsmacd'",
+            ('IF-MIB', 'ifPhysAddress', 12): '00:09:0f:9a:30:9f',
+            ('IF-MIB', 'ifMtu', 12): '1500',
+            ('IF-MIB', 'ifHighSpeed', 12): '10',
+            ('EtherLike-MIB', 'dot3StatsDuplexStatus', 12): '',
+            ('MAU-MIB', 'ifMauAutoNegAdminStatus', 12):
+                'No Such Instance currently exists at this OID',
+            ('ENTITY-MIB', 'entPhysicalContainedIn', 11): '1',
+            ('ENTITY-MIB', 'entPhysicalName', 12): 'port10',
+            ('IF-MIB', 'ifAlias', 13): '',
+            ('IF-MIB', 'ifType', 13): "'ethernetCsmacd'",
+            ('IF-MIB', 'ifPhysAddress', 13): '00:09:0f:9a:30:a0',
+            ('IF-MIB', 'ifMtu', 13): '1500',
+            ('IF-MIB', 'ifHighSpeed', 13): '10',
+            ('EtherLike-MIB', 'dot3StatsDuplexStatus', 13): '',
+            ('MAU-MIB', 'ifMauAutoNegAdminStatus', 13):
+                'No Such Instance currently exists at this OID',
+            ('ENTITY-MIB', 'entPhysicalContainedIn', 12): '1',
+            ('ENTITY-MIB', 'entPhysicalName', 13): 'port11',
+            ('IF-MIB', 'ifAlias', 1): 'TRUNK',
+            ('IF-MIB', 'ifType', 1): "'ethernetCsmacd'",
+            ('IF-MIB', 'ifPhysAddress', 1): '00:09:0f:9a:30:91',
+            ('IF-MIB', 'ifMtu', 1): '1500',
+            ('IF-MIB', 'ifHighSpeed', 1): '1000',
+            ('EtherLike-MIB', 'dot3StatsDuplexStatus', 1): "'fullDuplex'",
+            ('MAU-MIB', 'ifMauAutoNegAdminStatus', 1):
+                'No Such Instance currently exists at this OID',
+            ('ENTITY-MIB', 'entPhysicalContainedIn', 13): '1',
+            ('ENTITY-MIB', 'entPhysicalName', 14): 'port12',
+            ('IF-MIB', 'ifAlias', 2): 'TRANSITO-CLEAN',
+            ('IF-MIB', 'ifType', 2): "'ethernetCsmacd'",
+            ('IF-MIB', 'ifPhysAddress', 2): '00:09:0f:9a:30:92',
+            ('IF-MIB', 'ifMtu', 2): '1500',
+            ('IF-MIB', 'ifHighSpeed', 2): '1000',
+            ('EtherLike-MIB', 'dot3StatsDuplexStatus', 2): "'fullDuplex'",
+            ('MAU-MIB', 'ifMauAutoNegAdminStatus', 2):
+                'No Such Instance currently exists at this OID',
+            ('ENTITY-MIB', 'entPhysicalContainedIn', 14): '1',
+            ('ENTITY-MIB', 'entPhysicalName', 15): 'port13',
             ('IF-MIB', 'ifAlias', 3): '',
-            ('IF-MIB', 'ifHighSpeed', 3): '10000',
-            ('EtherLike-MIB', 'dot3StatsDuplexStatus', 3): '',
-            (
-            'MAU-MIB', 'ifMauAutoNegAdminStatus', 3): 'No Such Object currently exists at this OID',
-            ('IF-MIB', 'ifName', 4): 'port3',
+            ('IF-MIB', 'ifType', 3): "'ethernetCsmacd'",
+            ('IF-MIB', 'ifPhysAddress', 3): '00:09:0f:9a:30:93',
+            ('IF-MIB', 'ifMtu', 3): '1500',
+            ('IF-MIB', 'ifHighSpeed', 3): '0',
+            ('EtherLike-MIB', 'dot3StatsDuplexStatus', 3): "'halfDuplex'",
+            ('MAU-MIB', 'ifMauAutoNegAdminStatus', 3):
+                'No Such Instance currently exists at this OID',
+            ('ENTITY-MIB', 'entPhysicalContainedIn', 15): '1',
+            ('ENTITY-MIB', 'entPhysicalName', 16): 'port14',
             ('IF-MIB', 'ifAlias', 4): '',
-            ('IF-MIB', 'ifHighSpeed', 4): '10000',
-            ('EtherLike-MIB', 'dot3StatsDuplexStatus', 4): '',
-            (
-            'MAU-MIB', 'ifMauAutoNegAdminStatus', 4): 'No Such Object currently exists at this OID',
-            ('IF-MIB', 'ifName', 6): 'aggr',
+            ('IF-MIB', 'ifType', 4): "'ethernetCsmacd'",
+            ('IF-MIB', 'ifPhysAddress', 4): '00:09:0f:9a:30:94',
+            ('IF-MIB', 'ifMtu', 4): '1500',
+            ('IF-MIB', 'ifHighSpeed', 4): '0',
+            ('EtherLike-MIB', 'dot3StatsDuplexStatus', 4): "'halfDuplex'",
+            ('MAU-MIB', 'ifMauAutoNegAdminStatus', 4):
+                'No Such Instance currently exists at this OID',
+            ('ENTITY-MIB', 'entPhysicalContainedIn', 16): '1',
+            ('ENTITY-MIB', 'entPhysicalName', 17): 'port15',
+            ('IF-MIB', 'ifAlias', 5): '',
+            ('IF-MIB', 'ifType', 5): "'ethernetCsmacd'",
+            ('IF-MIB', 'ifPhysAddress', 5): '00:09:0f:9a:30:95',
+            ('IF-MIB', 'ifMtu', 5): '1500',
+            ('IF-MIB', 'ifHighSpeed', 5): '0',
+            ('EtherLike-MIB', 'dot3StatsDuplexStatus', 5): "'halfDuplex'",
+            ('MAU-MIB', 'ifMauAutoNegAdminStatus', 5):
+                'No Such Instance currently exists at this OID',
+            ('ENTITY-MIB', 'entPhysicalContainedIn', 17): '1',
+            ('ENTITY-MIB', 'entPhysicalName', 18): 'port16',
             ('IF-MIB', 'ifAlias', 6): '',
+            ('IF-MIB', 'ifType', 6): "'ethernetCsmacd'",
+            ('IF-MIB', 'ifPhysAddress', 6): '00:09:0f:9a:30:96',
+            ('IF-MIB', 'ifMtu', 6): '1500',
+            ('IF-MIB', 'ifHighSpeed', 6): '0',
+            ('EtherLike-MIB', 'dot3StatsDuplexStatus', 6): "'halfDuplex'",
+            ('MAU-MIB', 'ifMauAutoNegAdminStatus', 6):
+                'No Such Instance currently exists at this OID',
+            ('ENTITY-MIB', 'entPhysicalContainedIn', 18): '1',
         }
         table_map = {
             ('ENTITY-MIB', 'entPhysicalClass'): {
-                1: {'entPhysicalClass': "'chassis'", 'suffix': '1'}},
-            ('IF-MIB', 'ifTable'): {
-                1: {'ifType': "'tunnel'", 'suffix': '1', 'ifOutDiscards': '2',
-                    'ifAdminStatus': "'up'", 'ifMtu': '1500', 'ifInDiscards': '0',
-                    'ifInErrors': '0', 'ifDescr': '', 'ifOperStatus': "'up'", 'ifOutUcastPkts': '0',
-                    'ifInOctets': '0', 'ifLastChange': '0', 'ifPhysAddress': '',
-                    'ifInUcastPkts': '0', 'ifSpecific': 'SNMPv2-SMI::zeroDotZero.0',
-                    'ifOutErrors': '0', 'ifIndex': '1', 'ifOutQLen': '0', 'ifSpeed': '0',
-                    'ifOutNUcastPkts': '0', 'ifOutOctets': '0', 'ifInUnknownProtos': '0',
-                    'ifInNUcastPkts': '0'},
-                2: {'ifType': "'ethernetCsmacd'", 'suffix': '2', 'ifOutDiscards': '0',
-                    'ifAdminStatus': "'up'", 'ifMtu': '1500', 'ifInDiscards': '0',
-                    'ifInErrors': '0', 'ifDescr': '', 'ifOperStatus': "'up'",
-                    'ifOutUcastPkts': '50888', 'ifInOctets': '12467448', 'ifLastChange': '0',
-                    'ifPhysAddress': '52:54:00:e5:48:f5', 'ifInUcastPkts': '187601',
-                    'ifSpecific': 'SNMPv2-SMI::zeroDotZero.0', 'ifOutErrors': '0', 'ifIndex': '2',
-                    'ifOutQLen': '0', 'ifSpeed': '4294967295', 'ifOutNUcastPkts': '0',
-                    'ifOutOctets': '6495430', 'ifInUnknownProtos': '0', 'ifInNUcastPkts': '0'}},
-            ('ENTITY-MIB', 'entPhysicalContainsTable'): {},  # empty table
-            ('IP-MIB', 'ipAddrTable'): {
-                '192.168.122.240': {'ipAdEntAddr': '192.168.122.240', 'ipAdEntIfIndex': '2',
-                                    'suffix': '192.168.122.240', 'ipAdEntNetMask': '255.255.255.0',
-                                    'ipAdEntBcastAddr': '1', 'ipAdEntReasmMaxSize': '65535'}},
-            ('IPV6-MIB', 'ipv6AddrEntry'): {},
+                1: {'entPhysicalClass': "'chassis'", 'suffix': '1'},
+                2: {'entPhysicalClass': "'port'", 'suffix': '2'},
+                3: {'entPhysicalClass': "'port'", 'suffix': '3'},
+                4: {'entPhysicalClass': "'port'", 'suffix': '4'},
+                5: {'entPhysicalClass': "'port'", 'suffix': '5'},
+                6: {'entPhysicalClass': "'port'", 'suffix': '6'},
+                7: {'entPhysicalClass': "'port'", 'suffix': '7'},
+                8: {'entPhysicalClass': "'port'", 'suffix': '8'},
+                9: {'entPhysicalClass': "'port'", 'suffix': '9'},
+                10: {'entPhysicalClass': "'port'", 'suffix': '10'},
+                11: {'entPhysicalClass': "'port'", 'suffix': '11'},
+                12: {'entPhysicalClass': "'port'", 'suffix': '12'},
+                13: {'entPhysicalClass': "'port'", 'suffix': '13'},
+                14: {'entPhysicalClass': "'port'", 'suffix': '14'},
+                15: {'entPhysicalClass': "'port'", 'suffix': '15'},
+                16: {'entPhysicalClass': "'port'", 'suffix': '16'},
+                17: {'entPhysicalClass': "'port'", 'suffix': '17'},
+                18: {'entPhysicalClass': "'port'", 'suffix': '18'}
+            },
+            ('IF-MIB', 'ifName'): {
+                1: {'ifName': 'port11', 'suffix': '1'},
+                2: {'ifName': 'port12', 'suffix': '2'},
+                3: {'ifName': 'port13', 'suffix': '3'},
+                4: {'ifName': 'port14', 'suffix': '4'},
+                5: {'ifName': 'port15', 'suffix': '5'},
+                6: {'ifName': 'port16', 'suffix': '6'},
+                7: {'ifName': 'modem', 'suffix': '7'},
+                8: {'ifName': 'CR_DC_DIRTY', 'suffix': '8'},
+                9: {'ifName': 'CR_DIRTY_MGT', 'suffix': '9'},
+                10: {'ifName': 'ssl.root', 'suffix': '10'},
+                11: {'ifName': 'port1', 'suffix': '11'},
+                12: {'ifName': 'port9', 'suffix': '12'},
+                13: {'ifName': 'port10', 'suffix': '13'},
+                14: {'ifName': 'port2', 'suffix': '14'},
+                15: {'ifName': 'port3', 'suffix': '15'},
+                16: {'ifName': 'port4', 'suffix': '16'},
+                17: {'ifName': 'port5', 'suffix': '17'},
+                18: {'ifName': 'port6', 'suffix': '18'},
+                19: {'ifName': 'port7', 'suffix': '19'},
+                20: {'ifName': 'port8', 'suffix': '20'},
+                21: {'ifName': 'CR_CSHELL_DIRTY', 'suffix': '21'},
+                22: {'ifName': 'CR_HITL', 'suffix': '22'},
+                23: {'ifName': 'ssl.CSHELL_DIRT', 'suffix': '23'}
+            },
+            ('IP-MIB', 'ipAdEntIfIndex'): {
+                '192.168.2.1': {'ipAdEntIfIndex': '2', 'suffix': '192.168.2.1'},
+                '192.168.2.2': {'ipAdEntIfIndex': '21', 'suffix': '192.168.2.2'},
+                '192.168.2.3': {'ipAdEntIfIndex': '22', 'suffix': '192.168.2.3'},
+                '192.168.2.4': {'ipAdEntIfIndex': '8', 'suffix': '192.168.2.4'},
+                '192.168.2.5': {'ipAdEntIfIndex': '9', 'suffix': '192.168.2.5'}},
+            ('IPV6-MIB', 'ipv6AddrType'): {
+                '2.2001:0db8:11a3:09d7:1f34:8a2e:07a0:765d': {'ipv6AddrType': ''},
+                '6.2001:0db8:11a3:09d7:1f34:8a2e:07a0:766d': {'ipv6AddrType': ''},
+            },
             ('IEEE8023-LAG-MIB', 'dot3adAggPortAttachedAggID'): {},
             ('LLDP-MIB', 'lldpRemSysName'): {},
             ('LLDP-MIB', 'lldpLocPortDesc'): {},
+            ('IF-MIB', 'ifType'): {},
         }
 
         snmp_mock().get_property.side_effect = lambda *args: property_map[args]
         snmp_mock().get_table.side_effect = lambda *args: table_map[args]
 
-        self.assertRaisesRegexp(
-            FortiNetException,
-            'Cannot add a port to a chassis',
-            self.runner.discover,
+        details = self.runner.discover()
+
+        contact_name = sys_name = location = model = os_version = None
+        for attr in details.attributes:
+            if attr.relative_address == '':
+                if attr.attribute_name == 'Contact Name':
+                    contact_name = attr.attribute_value
+                elif attr.attribute_name == 'System Name':
+                    sys_name = attr.attribute_value
+                elif attr.attribute_name == 'Location':
+                    location = attr.attribute_value
+                elif attr.attribute_name == 'Model':
+                    model = attr.attribute_value
+                elif attr.attribute_name == 'OS Version':
+                    os_version = attr.attribute_value
+
+        self.assertEqual('admin', contact_name)
+        self.assertEqual('FortiGate-VM64-KVM', sys_name)
+        self.assertEqual('somewhere', location)
+        self.assertEqual('fgtVM64KVm', model)
+        self.assertEqual('v6.0.2,build0163,180725 (GA)', os_version)
+
+        ports = []
+        power_ports = []
+        port_channels = []
+        chassis = None
+
+        for resource in details.resources:
+            if resource.model == 'GenericPort':
+                ports.append(resource)
+            elif resource.model == 'GenericChassis':
+                chassis = resource
+            elif resource.model == 'GenericPowerPort':
+                power_ports.append(resource)
+            elif resource.model == 'GenericPortChannel':
+                port_channels.append(resource)
+
+        ports.sort(key=lambda p: p.name)
+        power_ports.sort(key=lambda pw: pw.name)
+        port_channels.sort(key=lambda pc: pc.name)
+
+        self.assertEqual('Chassis 1', chassis.name)
+
+        self.assertItemsEqual(
+            map('port{}'.format, range(1, 17)),
+            [port.name for port in ports]
         )
+        self.assertItemsEqual(
+            [], [pw.name for pw in power_ports]
+        )
+        self.assertItemsEqual(
+            [], [pc.name for pc in port_channels]
+        )
+
+        not_found = object
+        ipv4 = ipv6 = not_found
+        for attr in details.attributes:
+            if attr.relative_address == 'CH1/P14':
+                if attr.attribute_name == 'IPv6 Address':
+                    ipv6 = attr.attribute_value
+                elif attr.attribute_name == 'IPv4 Address':
+                    ipv4 = attr.attribute_value
+            if not_found not in (ipv4, ipv6):
+                break
+        else:
+            self.fail("Didn't find port CH1/P2")
+
+        self.assertEqual('192.168.2.1', ipv4)
+        self.assertEqual('2001:0db8:11a3:09d7:1f34:8a2e:07a0:765d', ipv6)
