@@ -3,3 +3,4 @@
 *.egg-info
 dist/
 _test.py
+build/
