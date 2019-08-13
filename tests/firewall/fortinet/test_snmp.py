@@ -664,7 +664,11 @@ class TestSnmpAutoload(BaseFortiNetTestCase):
             ('SNMPv2-MIB', 'sysObjectID', '0'): 'FORTINET-FORTIGATE-MIB::fgtVM64KVm',
             ('ENTITY-MIB', 'entPhysicalModelName', 1): 'FGT_VM64KVM',
             ('ENTITY-MIB', 'entPhysicalSerialNum', 1): 'FGVMEVBICE74EA11',
-            ('IF-MIB', 'ifName', 2): 'port1',
+            ('ENTITY-MIB', 'entPhysicalModelName', 2): 'FGT_VM64KVM',
+            ('ENTITY-MIB', 'entPhysicalSerialNum', 2): 'FGVMEVBICE74EA11',
+            # missed ifName for port1, look for it in ifDesc
+            ('IF-MIB', 'ifName', 2): '',
+            ('IF-MIB', 'ifDesc', 2): 'port1',
             ('IF-MIB', 'ifAlias', 2): '',
             ('IF-MIB', 'ifType', 2): "'ethernetCsmacd'",
             ('IF-MIB', 'ifPhysAddress', 2): '52:54:00:e5:48:f5',
@@ -693,7 +697,8 @@ class TestSnmpAutoload(BaseFortiNetTestCase):
         }
         table_map = {
             ('ENTITY-MIB', 'entPhysicalClass'): {
-                1: {'entPhysicalClass': "'chassis'", 'suffix': '1'}
+                1: {'entPhysicalClass': "'chassis'", 'suffix': '1'},
+                2: {'entPhysicalClass': "'chassis'", 'suffix': '2'},
             },
             ('IF-MIB', 'ifType'): {
                 1: {'ifType': "'tunnel'", 'suffix': '1'},
@@ -745,13 +750,13 @@ class TestSnmpAutoload(BaseFortiNetTestCase):
         ports = []
         power_ports = []
         port_channels = []
-        chassis = None
+        chassis = []
 
         for resource in details.resources:
             if resource.model == 'GenericPort':
                 ports.append(resource)
             elif resource.model == 'GenericChassis':
-                chassis = resource
+                chassis.append(resource)
             elif resource.model == 'GenericPowerPort':
                 power_ports.append(resource)
             elif resource.model == 'GenericPortChannel':
@@ -761,17 +766,12 @@ class TestSnmpAutoload(BaseFortiNetTestCase):
         power_ports.sort(key=lambda pw: pw.name)
         port_channels.sort(key=lambda pc: pc.name)
 
-        self.assertEqual('Chassis 1', chassis.name)
-
+        self.assertItemsEqual(['Chassis 1', 'Chassis 2'], [ch.name for ch in chassis])
         self.assertItemsEqual(
             ['port1', 'port2', 'port3'], [port.name for port in ports]
         )
-        self.assertItemsEqual(
-            [], [pw.name for pw in power_ports]
-        )
-        self.assertItemsEqual(
-            ['aggr'], [pc.name for pc in port_channels]
-        )
+        self.assertItemsEqual([], [pw.name for pw in power_ports])
+        self.assertItemsEqual(['aggr'], [pc.name for pc in port_channels])
 
         not_found = object
         ipv4 = ipv6 = not_found
@@ -1040,7 +1040,8 @@ class TestSnmpAutoload(BaseFortiNetTestCase):
                 18: {'entPhysicalClass': "'port'", 'suffix': '18'}
             },
             ('IF-MIB', 'ifName'): {
-                1: {'ifName': 'port11', 'suffix': '1'},
+                # port 11 missed name the name is in ifDesc
+                1: {'ifName': '', 'suffix': '1'},
                 2: {'ifName': 'port12', 'suffix': '2'},
                 3: {'ifName': 'port13', 'suffix': '3'},
                 4: {'ifName': 'port14', 'suffix': '4'},
@@ -1064,6 +1065,7 @@ class TestSnmpAutoload(BaseFortiNetTestCase):
                 22: {'ifName': 'CR_HITL', 'suffix': '22'},
                 23: {'ifName': 'ssl.CSHELL_DIRT', 'suffix': '23'}
             },
+            ('IF-MIB', 'ifDesc'): {1: {'ifDesc': 'port11', 'suffix': '1'}},
             ('IP-MIB', 'ipAdEntIfIndex'): {
                 '192.168.2.1': {'ipAdEntIfIndex': '2', 'suffix': '192.168.2.1'},
                 '192.168.2.2': {'ipAdEntIfIndex': '21', 'suffix': '192.168.2.2'},

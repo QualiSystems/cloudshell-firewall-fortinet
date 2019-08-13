@@ -219,15 +219,8 @@ class SNMPAutoload(object):
                 ENT_MIB,  ENT_PHYSICAL_CONTAINED_IN, ent_id
             )
 
-            try:
-                chassis = self.chassis[int(parent_id)]
-            except KeyError:
-                msg = 'We cannot find chassis with id {} for the port {}'.format(
-                    parent_id, port_obj.name
-                )
-                self.logger.info(msg)
-            else:
-                chassis.add_sub_resource(ent_id, port_obj)
+            chassis = self.chassis[int(parent_id)]
+            chassis.add_sub_resource(ent_id, port_obj)
 
     def _get_if_port_id(self, ent_name):
         if_port_id = self._dict_if_port_name_to_id.get(ent_name)
@@ -252,11 +245,7 @@ class SNMPAutoload(object):
                         "chassis add it. So we will add to the first chassis."
                     )
 
-                try:
-                    chassis = self.chassis.get(1)
-                except KeyError:
-                    chassis = self.chassis.values()[0]
-
+                chassis = self.chassis[min(self.chassis.keys())]
                 chassis.add_sub_resource(if_port_id, port_obj)
 
     def _get_port_duplex(self, id_):
