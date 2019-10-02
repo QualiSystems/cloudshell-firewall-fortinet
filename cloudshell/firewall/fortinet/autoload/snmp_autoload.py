@@ -5,7 +5,28 @@ from cloudshell.devices.autoload.autoload_builder import AutoloadDetailsBuilder,
 from cloudshell.devices.standards.firewall.autoload_structure import GenericResource, \
     GenericChassis, GenericPort, GenericPortChannel
 
+from cloudshell.firewall.fortinet.helpers.cached_property import cached_property
 from cloudshell.firewall.fortinet.helpers.exceptions import FortiNetException
+
+ENT_MIB = 'ENTITY-MIB'
+ENT_PHYSICAL_CLASS = 'entPhysicalClass'
+ENT_PHYSICAL_NAME = 'entPhysicalName'
+ENT_PHYSICAL_MODEL_NAME = 'entPhysicalModelName'
+ENT_PHYSICAL_CONTAINED_IN = 'entPhysicalContainedIn'
+ENT_PHYSICAL_DESCR = 'entPhysicalDescr'
+ENT_PHYSICAL_SERIAL_NUM = 'entPhysicalSerialNum'
+IF_MIB = 'IF-MIB'
+IF_NAME = 'ifName'
+IF_DESCR = 'ifDesc'
+IF_TYPE = 'ifType'
+IF_ALIAS = 'ifAlias'
+IF_PHYS_ADDRESS = 'ifPhysAddress'
+IF_MTU = 'ifMtu'
+IF_HIGH_SPEED = 'ifHighSpeed'
+IP_MIB = 'IP-MIB'
+IP_IF_INDEX = 'ipAdEntIfIndex'
+IPV6_MIB = 'IPV6-MIB'
+IPV6_ADDR_TYPE = 'ipv6AddrType'
 
 
 class SNMPAutoload(object):
@@ -31,6 +52,9 @@ class SNMPAutoload(object):
         self.chassis = {}
         self.resource = GenericResource(shell_name, resource_name, resource_name, shell_type)
 
+        self._chassis_ent_ids = set()
+        self._ports_ent_ids = set()
+
     def discover(self, supported_os):
         """General entry point for autoload,
             read device structure and attributes: chassis, ports, port-channels
@@ -50,6 +74,7 @@ class SNMPAutoload(object):
         self._get_device_details()
 
         self._load_snmp_tables()
+        self._get_entity_ids()
         self._add_chassis()
         self._add_ports()
         self._add_port_channels()
@@ -57,6 +82,30 @@ class SNMPAutoload(object):
         autoload_details = AutoloadDetailsBuilder(self.resource).autoload_details()
         self._log_autoload_details(autoload_details)
         return autoload_details
+
+    @cached_property
+    def _dict_if_port_name_to_id(self):
+        table = self.snmp_service.get_table(IF_MIB, IF_NAME)
+        return {attrs[IF_NAME]: id_ for id_, attrs in table.items()}
+
+    @cached_property
+    def _dict_if_port_desc_to_id(self):
+        table = self.snmp_service.get_table(IF_MIB, IF_DESCR)
+        return {attrs[IF_DESCR]: id_ for id_, attrs in table.items()}
+
+    @cached_property
+    def _dict_if_port_id_to_ipv4_addr(self):
+        table = self.snmp_service.get_table(IP_MIB, IP_IF_INDEX)
+        return {int(attrs[IP_IF_INDEX]): ip for ip, attrs in table.items()}
+
+    @cached_property
+    def _dict_if_port_id_to_ipv6_addr(self):
+        table = self.snmp_service.get_table(IPV6_MIB, IPV6_ADDR_TYPE)
+        result_table = {}
+        for index in table:
+            if_port_id, ipv6_addr = index.split('.', 1)
+            result_table[int(if_port_id)] = ipv6_addr
+        return result_table
 
     def _load_mibs(self):
         """Loads FortiNet specific mibs inside snmp handler"""
@@ -69,12 +118,6 @@ class SNMPAutoload(object):
 
         self.logger.info('Start loading MIB tables:')
 
-        self.entity_table = self.snmp_service.get_table('ENTITY-MIB', 'entPhysicalClass')
-        self.if_table = self.snmp_service.get_table('IF-MIB', 'ifTable')
-        self.port_contains_table = self.snmp_service.get_table(
-            'ENTITY-MIB', 'entPhysicalContainsTable')
-        self.ip_v4_table = self.snmp_service.get_table('IP-MIB', 'ipAddrTable')
-        self.ip_v6_table = self.snmp_service.get_table('IPV6-MIB', 'ipv6AddrEntry')
         self.port_channel_table = self.snmp_service.get_table(
             'IEEE8023-LAG-MIB', 'dot3adAggPortAttachedAggID')
         self.lldp_remote_table = self.snmp_service.get_table('LLDP-MIB', 'lldpRemSysName')
@@ -86,78 +129,129 @@ class SNMPAutoload(object):
     def _get_unique_id(self, obj_type, id_):
         return '{}.{}.{}'.format(self.resource_name, obj_type, id_)
 
+    def _get_entity_ids(self):
+        table = self.snmp_service.get_table(ENT_MIB, ENT_PHYSICAL_CLASS)
+        for id_, attrs in table.items():
+            if attrs[ENT_PHYSICAL_CLASS].strip("'") == 'port':
+                self._ports_ent_ids.add(id_)
+            elif attrs[ENT_PHYSICAL_CLASS].strip("'") == 'chassis':
+                self._chassis_ent_ids.add(id_)
+
     def _build_chassis(self, index):
         uniq_id = self._get_unique_id('chassis', index)
         chassis_obj = GenericChassis(self.shell_name, 'Chassis {}'.format(index), uniq_id)
 
         chassis_obj.model = (
-                self.snmp_service.get_property('ENTITY-MIB', 'entPhysicalModelName', index) or
-                self.snmp_service.get_property('ENTITY-MIB', 'entPhysicalDescr', index)
+                self.snmp_service.get_property(ENT_MIB, ENT_PHYSICAL_MODEL_NAME, index)
+                or self.snmp_service.get_property(ENT_MIB, ENT_PHYSICAL_DESCR, index)
         )
         chassis_obj.serial_number = self.snmp_service.get_property(
-            'ENTITY-MIB', 'entPhysicalSerialNum', index)
+            ENT_MIB, ENT_PHYSICAL_SERIAL_NUM, index
+        )
 
         return chassis_obj
 
     def _add_chassis(self):
         self.logger.info('Building Chassis')
 
-        for index, attrs in self.entity_table.items():
-            if attrs['entPhysicalClass'].strip("'") == 'chassis':
-                chassis_obj = self._build_chassis(index)
-                self.resource.add_sub_resource(index, chassis_obj)
-                self.chassis[index] = chassis_obj
+        for id_ in self._chassis_ent_ids:
+            chassis_obj = self._build_chassis(id_)
+            self.resource.add_sub_resource(id_, chassis_obj)
+            self.chassis[id_] = chassis_obj
 
         self.logger.info('Building Chassis completed')
 
-    def _build_port(self, id_, attrs):
-        unique_id = self._get_unique_id('port', id_)
-        if_name = self.snmp_service.get_property('IF-MIB', 'ifName', id_)
+    def _build_port(self, port_if_id, name):
+        unique_id = self._get_unique_id('port', port_if_id)
+        port_obj = GenericPort(self.shell_name, name, unique_id)
 
-        port_obj = GenericPort(self.shell_name, if_name, unique_id)
+        port_obj.port_description = self.snmp_service.get_property(
+            IF_MIB, IF_ALIAS, port_if_id
+        )
+        port_obj.l2_protocol_type = self.snmp_service.get_property(
+            IF_MIB, IF_TYPE, port_if_id
+        ).strip("'")
+        port_obj.mac_address = self.snmp_service.get_property(
+            IF_MIB, IF_PHYS_ADDRESS, port_if_id
+        )
+        port_obj.mtu = int(self.snmp_service.get_property(IF_MIB, IF_MTU, port_if_id))
+        port_obj.bandwidth = int(
+            self.snmp_service.get_property(IF_MIB, IF_HIGH_SPEED, port_if_id)
+        )
+        port_obj.ipv4_address = self._dict_if_port_id_to_ipv4_addr.get(port_if_id)
+        port_obj.ipv6_address = self._dict_if_port_id_to_ipv6_addr.get(port_if_id)
+        port_obj.duplex = self._get_port_duplex(port_if_id)
+        port_obj.auto_negotiation = self._get_port_auto_negotiation(port_if_id)
+        port_obj.adjacent = self._get_adjacent(name)
 
-        port_obj.port_description = self.snmp_service.get_property('IF-MIB', 'ifAlias', id_)
-        port_obj.l2_protocol_type = attrs['ifType'].strip("'")
-        port_obj.mac_address = attrs['ifPhysAddress']
-        port_obj.mtu = int(attrs['ifMtu'])
-        port_obj.bandwidth = int(self.snmp_service.get_property('IF-MIB', 'ifHighSpeed', id_))
-        port_obj.ipv4_address = self._get_ipv4_interface_address(id_)
-        port_obj.ipv6_address = self._get_ipv6_interface_address(id_)
-        port_obj.duplex = self._get_port_duplex(id_)
-        port_obj.auto_negotiation = self._get_port_auto_negotiation(id_)
-        port_obj.adjacent = self._get_adjacent(if_name)
-
-        self.logger.info('Added {} Port'.format(if_name))
+        self.logger.info('Added {} Port'.format(name))
         return port_obj
-
-    def _add_port_to_chassis(self, port_id, port_obj):
-        for attrs in self.port_contains_table.itervalues():
-            if attrs['entPhysicalChildIndex'] == str(port_id):
-                chassis_id = attrs['suffix'].split('.', 1)[0]
-                break
-        else:
-            self.logger.error(
-                'Cannot add port to chassis. entPhysicalContainsTable have to contain relation '
-                'between port index and chassis index')
-            raise FortiNetException('Cannot add a port to a chassis')
-
-        chassis_obj = self.chassis[int(chassis_id)]
-        chassis_obj.add_sub_resource(port_id, port_obj)
 
     def _add_ports(self):
         self.logger.info('Loading Ports')
 
-        for id_, attrs in self.if_table.items():
-            if attrs['ifType'].strip("'") == 'ethernetCsmacd':
-                port_obj = self._build_port(id_, attrs)
-                self._add_port_to_chassis(id_, port_obj)
+        if self._ports_ent_ids:
+            self._add_ports_with_ent_table()
+        else:
+            self.logger.info(
+                "Entity table doesn't have ports in it. "
+                "Try to autoload ports from IF table."
+            )
+            self._add_ports_without_ent_table()
 
         self.logger.info('Building Ports completed')
+
+    @staticmethod
+    def _is_valid_port_name(port_name):
+        return port_name.lower() != 'modem'
+
+    def _add_ports_with_ent_table(self):
+        for ent_id in self._ports_ent_ids:
+            ent_name = self.snmp_service.get_property(
+                ENT_MIB, ENT_PHYSICAL_NAME, ent_id
+            )
+            if not self._is_valid_port_name(ent_name):
+                continue
+
+            if_port_id = self._get_if_port_id(ent_name)
+            port_obj = self._build_port(if_port_id, ent_name)
+            parent_id = self.snmp_service.get_property(
+                ENT_MIB,  ENT_PHYSICAL_CONTAINED_IN, ent_id
+            )
+
+            chassis = self.chassis[int(parent_id)]
+            chassis.add_sub_resource(ent_id, port_obj)
+
+    def _get_if_port_id(self, ent_name):
+        if_port_id = self._dict_if_port_name_to_id.get(ent_name)
+        if not if_port_id:
+            if_port_id = self._dict_if_port_desc_to_id.get(ent_name)
+
+        return if_port_id
+
+    def _add_ports_without_ent_table(self):
+        table = self.snmp_service.get_table(IF_MIB, IF_TYPE)
+        for if_port_id, attrs in table.items():
+            if attrs[IF_TYPE].strip("'") == 'ethernetCsmacd':
+                name = self.snmp_service.get_property(IF_MIB, IF_NAME, if_port_id)
+                if not name:
+                    name = self.snmp_service.get_property(IF_MIB, IF_DESCR, if_port_id)
+
+                port_obj = self._build_port(if_port_id, name)
+
+                if len(self.chassis) > 1:
+                    self.logger.info(
+                        "Entity table doesn't have ports so we don't know in which "
+                        "chassis add it. So we will add to the first chassis."
+                    )
+
+                chassis = self.chassis[min(self.chassis.keys())]
+                chassis.add_sub_resource(if_port_id, port_obj)
 
     def _get_port_duplex(self, id_):
         duplex = self.snmp_service.get_property('EtherLike-MIB', 'dot3StatsDuplexStatus', id_)
         if duplex.strip("'") != 'fullDuplex':
-                return 'Half'
+            return 'Half'
         return 'Full'
 
     def _get_port_auto_negotiation(self, id_):
@@ -166,14 +260,16 @@ class SNMPAutoload(object):
 
     def _build_port_channel(self, id_):
         unique_id = self._get_unique_id('port_channel', id_)
-        if_name = self.snmp_service.get_property('IF-MIB', 'ifName', id_)
+        if_name = self.snmp_service.get_property(IF_MIB, IF_NAME, id_)
 
         port_channel = GenericPortChannel(self.shell_name, if_name, unique_id)
 
-        port_channel.port_description = self.snmp_service.get_property('IF-MIB', 'ifAlias', id_)
+        port_channel.port_description = self.snmp_service.get_property(
+            IF_MIB, IF_ALIAS, id_
+        )
         port_channel.associated_ports = '; '.join(self._get_associated_ports(id_))
-        port_channel.ipv4_address = self._get_ipv4_interface_address(id_)
-        port_channel.ipv6_address = self._get_ipv6_interface_address(id_)
+        port_channel.ipv4_address = self._dict_if_port_id_to_ipv4_addr.get(id_)
+        port_channel.ipv6_address = self._dict_if_port_id_to_ipv6_addr.get(id_)
 
         self.logger.info('Added {} Port Channel'.format(if_name))
         return port_channel
@@ -181,8 +277,9 @@ class SNMPAutoload(object):
     def _add_port_channels(self):
         self.logger.info('Building Port Channels')
 
-        for id_, attrs in self.if_table.items():
-            if attrs['ifType'].strip("'") == 'ieee8023adLag':
+        table = self.snmp_service.get_table(IF_MIB, IF_TYPE)
+        for id_, attrs in table.items():
+            if attrs[IF_TYPE].strip("'") == 'ieee8023adLag':
                 port_channel = self._build_port_channel(id_)
                 self.resource.add_sub_resource(id_, port_channel)
 
@@ -228,23 +325,6 @@ class SNMPAutoload(object):
                             'operation system(s)'.format(str(tuple(supported_os)))
             self.logger.error(error_message)
             return False
-
-    def _get_ipv4_interface_address(self, port_id):
-        """Get IPv4 address details for provided port"""
-
-        for ip, attrs in self.ip_v4_table.iteritems():
-            if str(attrs.get('ipAdEntIfIndex')) == str(port_id):
-                return ip
-
-    def _get_ipv6_interface_address(self, port_id):
-        """Get IPv6 address details for provided port"""
-
-        for key, attrs in self.ip_v6_table.iteritems():
-            try:
-                if int(attrs['ipAdEntIfIndex']) == port_id:
-                    return key
-            except (KeyError, ValueError) as e:
-                continue
 
     def _get_device_details(self):
         """ Get root element attributes """
