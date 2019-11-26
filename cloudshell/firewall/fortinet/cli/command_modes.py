@@ -38,9 +38,14 @@ class EditSomeIndexCommandMode(FortiNetCommandMode):
 
 class EnableCommandMode(FortiNetCommandMode):
     NOT_A_CONF_MODE = r'((?!\(.*?\)).)+?'  # without (some text)
-    PROMPT = r'{}{}\s#{}'.format(BEGIN_OF_LINE, NOT_A_CONF_MODE, END_OF_LINE)
+    ENABLE_PROMPT = r'{}{}\s#{}'.format(BEGIN_OF_LINE, NOT_A_CONF_MODE, END_OF_LINE)
+    GLOBAL_PROMPT = r'{}.+? \(global\) #{}'.format(BEGIN_OF_LINE, END_OF_LINE)
     ENTER_COMMAND = ''
     EXIT_COMMAND = ''
+
+    def __init__(self):
+        super(EnableCommandMode, self).__init__()
+        is_vdom_device = None
 
 
 class ConfigConsoleCommandMode(FortiNetCommandMode):
