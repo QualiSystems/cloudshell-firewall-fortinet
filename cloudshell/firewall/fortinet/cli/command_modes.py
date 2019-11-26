@@ -1,3 +1,5 @@
+import re
+
 from cloudshell.cli.command_mode import CommandMode
 
 
@@ -40,12 +42,40 @@ class EnableCommandMode(FortiNetCommandMode):
     NOT_A_CONF_MODE = r'((?!\(.*?\)).)+?'  # without (some text)
     ENABLE_PROMPT = r'{}{}\s#{}'.format(BEGIN_OF_LINE, NOT_A_CONF_MODE, END_OF_LINE)
     GLOBAL_PROMPT = r'{}.+? \(global\) #{}'.format(BEGIN_OF_LINE, END_OF_LINE)
+    ALL_PROMPTS = '{}|{}'.format(ENABLE_PROMPT, GLOBAL_PROMPT)
+    PROMPT = ALL_PROMPTS
+
     ENTER_COMMAND = ''
+    ENTER_GLOBAL_COMMAND = 'config global'
     EXIT_COMMAND = ''
+
+    @property
+    def _enter_global_mode_map(self):
+        return {
+            self.ENABLE_PROMPT: (
+                lambda session, logger:
+                session.send_line(self.ENTER_GLOBAL_COMMAND, logger)
+            )
+        }
+
+    def _enter_global_mode_actions(self, cli_service):
+        """:type cli_service: cloudshell.cli.cli_service_impl.CliServiceImpl"""
+        if self.is_vdom_device is None:
+            output = cli_service.send_command(
+                '', self.ALL_PROMPTS, action_map=self._enter_global_mode_map
+            )
+            if re.search(self.GLOBAL_PROMPT, output):
+                self.is_vdom_device = True
+                self.prompt = self.GLOBAL_PROMPT
+                self._enter_action_map = self._enter_global_mode_map
+            else:
+                self.is_vdom_device = False
+                self.prompt = self.ENABLE_PROMPT
 
     def __init__(self):
         super(EnableCommandMode, self).__init__()
-        is_vdom_device = None
+        self._enter_actions = self._enter_global_mode_actions
+        self.is_vdom_device = None
 
 
 class ConfigConsoleCommandMode(FortiNetCommandMode):
