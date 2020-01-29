@@ -42,20 +42,26 @@ class CliEmulator(object):
         self._is_vdom_device = is_vdom_device
         self.request = None
 
-        check_is_vdom_device_command = (
-            Command('', GLOBAL_PROMPT) if is_vdom_device
-            else Command('', ENABLE_PROMPT)
-        )
-
-        self.commands = deque([
-            Command(None, ENABLE_PROMPT),
-            Command('', ENABLE_PROMPT),
-            check_is_vdom_device_command,
-            Command('config system console', CONFIG_CONSOLE_PROMPT),
-            Command('set output standard', CONFIG_CONSOLE_PROMPT),
-            Command('end', ENABLE_PROMPT),
-            Command('', ENABLE_PROMPT),
-        ])
+        if is_vdom_device:
+            self.commands = deque([
+                Command(None, ENABLE_PROMPT),
+                Command('', ENABLE_PROMPT),
+                Command('', GLOBAL_PROMPT),
+                Command('config system console', CONFIG_CONSOLE_PROMPT),
+                Command('set output standard', CONFIG_CONSOLE_PROMPT),
+                Command('end', GLOBAL_PROMPT),
+                Command('', GLOBAL_PROMPT),
+            ])
+        else:
+            self.commands = deque([
+                Command(None, ENABLE_PROMPT),
+                Command('', ENABLE_PROMPT),
+                Command('', ENABLE_PROMPT),
+                Command('config system console', CONFIG_CONSOLE_PROMPT),
+                Command('set output standard', CONFIG_CONSOLE_PROMPT),
+                Command('end', ENABLE_PROMPT),
+                Command('', ENABLE_PROMPT),
+            ])
 
         if commands:
             self.commands.extend(commands)
