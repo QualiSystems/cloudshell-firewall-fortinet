@@ -12,6 +12,7 @@ from cloudshell.firewall.fortinet.cli.cli_handler import FortiNetCliHandler
 
 
 ENABLE_PROMPT = 'FortiGate-VM64-KVM #'
+GLOBAL_PROMPT = 'FortiGate-VM64-KVM (global) #'
 CONFIG_CONSOLE_PROMPT = 'FortiGate-VM64-KVM (console) #'
 CONFIG_SNMP_SYSINFO_PROMPT = 'FortiGate-VM64-KVM (sysinfo) #'
 CONFIG_SNMP_V2_PROMPT = 'FortiGate-VM64-KVM (community) #'
@@ -37,12 +38,19 @@ class Command(object):
 
 
 class CliEmulator(object):
-    def __init__(self, commands=None):
+    def __init__(self, commands=None, is_vdom_device=False):
+        self._is_vdom_device = is_vdom_device
         self.request = None
+
+        check_is_vdom_device_command = (
+            Command('', GLOBAL_PROMPT) if is_vdom_device
+            else Command('', ENABLE_PROMPT)
+        )
 
         self.commands = deque([
             Command(None, ENABLE_PROMPT),
             Command('', ENABLE_PROMPT),
+            check_is_vdom_device_command,
             Command('config system console', CONFIG_CONSOLE_PROMPT),
             Command('set output standard', CONFIG_CONSOLE_PROMPT),
             Command('end', ENABLE_PROMPT),
